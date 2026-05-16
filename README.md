@@ -66,7 +66,7 @@ Max 9 provides several built-in objects suitable for pitch detection. Two were e
 
 #### `retune~`
 
-`retune~` is a Max 9 object designed for pitch detection and pitch shifting. It accepts an audio signal and shifts it by a specified number of cents. It provides five outputs:
+`retune~` is a Max 9 object designed for pitch detection and pitch shifting. It accepts an audio signal and shifts it by a specified number of cents. It provides five outputs: [5]
 
 - Pitch-shifted audio signal
 - Detected frequency (Hz, signal)
@@ -84,7 +84,7 @@ Max 9 provides several built-in objects suitable for pitch detection. Two were e
 
 #### `fzero~`
 
-`fzero~` approximates the fundamental frequency of a mono audio input signal. It accepts one mono signal and outputs an approximated f₀ value in Hz as a float. [5]
+`fzero~` approximates the fundamental frequency of a mono audio input signal. It accepts one mono signal and outputs an approximated f₀ value in Hz as a float. [6]
 
 **Pros:** Low latency; accurate across the full pitch range of the bass guitar, including low frequencies.
 
@@ -198,7 +198,7 @@ This sub-patch determines whether the detected pitch corresponds to one of the f
 | G      | G2    | 98.00 Hz                 |
 
 **Note Identification via UTF-32 Encoding:**
-Max/MSP does not natively support string comparison between symbol or char objects. As a workaround informed by community research [7], the `atoi` object is used to convert each character of the pitch name to its UTF-32 integer value. The note letter and octave digit are converted separately, producing two integers that together uniquely identify the pitch. These integer pairs are then checked against four parallel conditional branches corresponding to the open strings:
+Max/MSP does not natively support string comparison between symbol or char objects. As a workaround informed by community research [8], the `atoi` object is used to convert each character of the pitch name to its UTF-32 integer value. The note letter and octave digit are converted separately, producing two integers that together uniquely identify the pitch. These integer pairs are then checked against four parallel conditional branches corresponding to the open strings:
 
 | String | Pitch | UTF-32 (Note) | UTF-32 (Octave) |
 |--------|-------|---------------|-----------------|
@@ -222,7 +222,7 @@ Where `f_reference` is the equal-tempered reference frequency of the open string
 
 #### Tuner Display
 
-The visual display is built using three Jitter objects within Max 9: [6]
+The visual display is built using three Jitter objects within Max 9: [7]
 
 - **`jit.world`** — creates and manages the OpenGL rendering window
 - **`jit.gl.text`** — renders the detected pitch name as text in the center of the display
@@ -263,10 +263,12 @@ The blue circle's blending mode is set to **exclusion**. When it overlaps the ye
 
 [3] Wikipedia contributors, "Cent (music) — Use," *Wikipedia, The Free Encyclopedia*. [Online]. Available: https://en.wikipedia.org/wiki/Cent_(music)#Use
 
-[4] MIDI Manufacturers Association, "MIDI 1.0 Detailed Specification," MMA, 1996. [Online]. Available: https://www.midi.org/specifications
+[4] Wikipedia contributors, "General MIDI," *Wikipedia, The Free Encyclopedia*. [Online]. Available: https://en.wikipedia.org/wiki/General_MIDI
 
-[5] Cycling '74, "`fzero~` Object Reference," *Max 9 Documentation*. [Online]. Available: https://docs.cycling74.com/max8/refpages/fzero~
+[5] Cycling '74, "retune~ Object Reference," *Max 9 Documentation*. [Online]. Available: https://docs.cycling74.com/reference/retune~/
 
-[6] Cycling '74, "Jitter Tutorial," *Max 9 Documentation*. [Online]. Available: https://docs.cycling74.com/max8/vignettes/jitter_tutorial_index
+[6] Cycling '74, "`fzero~` Object Reference," *Max 9 Documentation*. [Online]. Available: [https://docs.cycling74.com/max8/refpages/fzero~](https://docs.cycling74.com/reference/fzero~/)
 
-[7] Cycling '74 Community Forums, "String comparison," *Cycling '74 Forums*. [Online]. Available: https://cycling74.com/forums/string-comparison
+[7] Cycling '74, "Jitter Object API Reference," *Max 9 Documentation*. [Online]. Available: https://docs.cycling74.com/apiref/js/jitterobject/
+
+[8] Cycling '74 Community Forums, "String comparison," *Cycling '74 Forums*. [Online]. Available: https://cycling74.com/forums/string-comparison
