@@ -1,335 +1,272 @@
-# Daisyseed-Bass-Pedal
-DAISY SEED BASS MULTIEFFECTS PEDAL -- PROJECT DOCUMENTATION
+# Daisy Seed Bass Multieffects Pedal — Project Documentation
 
+---
 
-OVERVIEW
---------
-This project aims to develop a fully customizable bass multieffects pedal using
-the Daisy Seed microcontroller platform. The Daisy Seed supports audio
-development through two primary libraries: DaisySP, a DSP (Digital Signal
-Processing) library, and LibDaisy, a hardware abstraction layer [1]. A known
-limitation of these libraries is that they are not specifically optimized for
-bass frequencies, which introduces challenges in low-frequency signal processing.
+## Overview
 
-An additional limitation is that neither DaisySP nor LibDaisy include built-in
-tuner functionality. To address this, a standalone tuner module is being
-developed separately using Max/MSP, a visual programming environment for audio
-and multimedia applications [2].
+This project aims to develop a fully customizable bass multieffects pedal using the **Daisy Seed** microcontroller platform. The Daisy Seed supports audio development through two primary libraries: **DaisySP**, a DSP (Digital Signal Processing) library, and **LibDaisy**, a hardware abstraction layer [1]. A known limitation of these libraries is that they are not specifically optimized for bass frequencies, which introduces challenges in low-frequency signal processing.
 
- 
-TABLE OF CONTENTS
- 
+An additional limitation is that neither DaisySP nor LibDaisy include built-in tuner functionality. To address this, a standalone tuner module is being developed separately using **Max/MSP**, a visual programming environment for audio and multimedia applications [2].
 
-  Part 1 -- Max/MSP Tuner Module
-    1.1  Definitions
-    1.2  Design Requirements
-    1.3  Iteration 1 -- Initial Pitch Detection Attempts
-    1.4  Iteration 2 -- Revised Pitch Detection Patch
-    1.5  Main Patch and Display
+---
 
-  Part 2 -- Daisy Seed DSP Integration         [Coming Soon]
-  Part 3 -- Hardware Design                    [Coming Soon]
-  References
+## Table of Contents
 
- 
-PART 1 -- MAX/MSP TUNER MODULE
- 
+- [Part 1 — Max/MSP Tuner Module](#part-1--maxmsp-tuner-module)
+  - [Definitions](#definitions)
+  - [Design Requirements](#design-requirements)
+  - [Iteration 1 — Initial Pitch Detection Attempts](#iteration-1--initial-pitch-detection-attempts)
+  - [Iteration 2 — Revised Pitch Detection Patch](#iteration-2--revised-pitch-detection-patch)
+  - [Main Patch and Display](#main-patch-and-display)
+- [Part 2 — Daisy Seed DSP Integration](#part-2--daisy-seed-dsp-integration) *(Coming Soon)*
+- [Part 3 — Hardware Design](#part-3--hardware-design) *(Coming Soon)*
+- [References](#references)
 
-Demo Video: https://youtu.be/RtGl-JkB-hE?si=WJLJehn5ctu94i5V
+---
 
---------------------------------------------------------------------------------
-1.1  DEFINITIONS
---------------------------------------------------------------------------------
+## Part 1 — Max/MSP Tuner Module
 
-Fundamental Frequency (f0)
-  The lowest frequency component of a periodic waveform, generally perceived
-  as the pitch of the signal. In a bass guitar signal, this is the note being
-  played. [3]
+**Demo Video:** [https://youtu.be/RtGl-JkB-hE?si=WJLJehn5ctu94i5V](https://youtu.be/RtGl-JkB-hE?si=WJLJehn5ctu94i5V)
 
-MIDI (Musical Instrument Digital Interface)
-  A standardized communication protocol for musical instruments and software.
-  MIDI note numbers are integers ranging from 0-127 that encode pitch, where
-  each integer represents one semitone. [4]
+---
 
-Pitch
-  A perceptual property of sound that allows it to be classified as higher or
-  lower relative to other sounds. In music, pitch is defined by the combination
-  of a note name (note class) and an octave number.
+### Definitions
 
-  Example:  E (note class) + 2 (octave) = E2 (pitch)
+**Fundamental Frequency (f₀)**
+The lowest frequency component of a periodic waveform, generally perceived as the pitch of the signal. In a bass guitar signal, this is the note being played. [3]
 
-Cent
-  A unit of measure for musical intervals. One octave contains 1200 cents; one
-  semitone contains 100 cents. Cents are used to express fine intonation
-  deviation. [3]
+**MIDI (Musical Instrument Digital Interface)**
+A standardized communication protocol for musical instruments and software. MIDI note numbers are integers ranging from 0–127 that encode pitch, where each integer represents one semitone. [4]
 
---------------------------------------------------------------------------------
-1.2  DESIGN REQUIREMENTS
---------------------------------------------------------------------------------
+**Pitch**
+A perceptual property of sound that allows it to be classified as higher or lower relative to other sounds. In music, pitch is defined by the combination of a note name (note class) and an octave number.
+
+> Example: E (note class) + 2 (octave) = **E2** (pitch)
+
+**Cent**
+A unit of measure for musical intervals. One octave contains 1200 cents; one semitone contains 100 cents. Cents are used to express fine intonation deviation. [3]
+
+---
+
+### Design Requirements
 
 Develop a Max/MSP patch that:
 
-  1. Accepts a live bass guitar audio signal as input.
-  2. Detects and outputs the fundamental frequency (f0) in Hz.
-  3. Identifies the closest equal-tempered pitch.
-  4. Calculates the deviation in cents from that pitch.
-  5. Displays all values in a real-time visual interface.
+1. Accepts a live bass guitar audio signal as input.
+2. Detects and outputs the fundamental frequency (f₀) in Hz.
+3. Identifies the closest equal-tempered pitch.
+4. Calculates the deviation in cents from that pitch.
+5. Displays all values in a real-time visual interface.
 
---------------------------------------------------------------------------------
-1.3  ITERATION 1 -- INITIAL PITCH DETECTION ATTEMPTS
---------------------------------------------------------------------------------
+---
 
-Max 9 provides several built-in objects suitable for pitch detection. Two were
-evaluated in this iteration: retune~ and fzero~.
+### Iteration 1 — Initial Pitch Detection Attempts
 
-  retune~
-  -------
-  retune~ is a Max 9 object designed for pitch detection and pitch shifting.
-  It accepts an audio signal and shifts it by a specified number of cents.
-  It provides five outputs:
+Max 9 provides several built-in objects suitable for pitch detection. Two were evaluated in this iteration: `retune~` and `fzero~`.
 
-    - Pitch-shifted audio signal
-    - Detected frequency (Hz, signal)
-    - Closest MIDI note number (0-11, where 0 = C)
-    - Deviation in cents from the closest note
-    - A list containing the closest note and cent deviation as an integer
-      and float, respectively
+#### `retune~`
 
-  Pros:
-    Natively provides all outputs required by the design specification.
+`retune~` is a Max 9 object designed for pitch detection and pitch shifting. It accepts an audio signal and shifts it by a specified number of cents. It provides five outputs:
 
-  Cons:
-    Due to the natural harmonic overtones present in the open strings of a
-    bass guitar, fundamental frequency detection was highly unreliable for
-    low-frequency notes. For example, the open E string (E1, ~41.2 Hz) was
-    consistently misidentified.
+- Pitch-shifted audio signal
+- Detected frequency (Hz, signal)
+- Closest MIDI note number (0–11, where 0 = C)
+- Deviation in cents from the closest note
+- A list containing the closest note and cent deviation as an integer and float, respectively
 
-  Conclusion:
-    retune~ is theoretically well-suited for this application but proved
-    unreliable in practice for low bass frequencies.
+**Pros:** Natively provides all outputs required by the design specification.
 
-  -----------------------------------------------------------------------
+**Cons:** Due to the natural harmonic overtones present in the open strings of a bass guitar, the fundamental frequency detection was highly unreliable for low-frequency notes. For example, the open E string (E1, ≈41.2 Hz) was consistently misidentified.
 
-  fzero~
-  ------
-  fzero~ approximates the fundamental frequency of a mono audio input signal.
-  It accepts one mono signal and outputs an approximated f0 value in Hz as a
-  float. [5]
+**Conclusion:** `retune~` is theoretically well-suited for this application but proved unreliable in practice for low bass frequencies.
 
-  Pros:
-    Low latency; accurate across the full pitch range of the bass guitar,
-    including low frequencies.
+---
 
-  Cons:
-    Outputs frequency in Hz only. Additional logic is required to map the
-    detected frequency to a note name, octave, and cent deviation.
+#### `fzero~`
 
-  Conclusion:
-    fzero~ was selected as the pitch detection method for subsequent
-    iterations. Its accuracy comes at the cost of requiring manual
-    implementation of pitch-mapping logic.
+`fzero~` approximates the fundamental frequency of a mono audio input signal. It accepts one mono signal and outputs an approximated f₀ value in Hz as a float. [5]
 
-  -----------------------------------------------------------------------
+**Pros:** Low latency; accurate across the full pitch range of the bass guitar, including low frequencies.
 
-  AI-Assisted Prototyping (Claude Sonnet)
-  ----------------------------------------
-  To accelerate development of the pitch-mapping logic around fzero~, the
-  Claude Sonnet language model was used to generate an initial Max 9 patch.
-  As the author was still developing familiarity with Max 9's object model
-  and syntax, the intent was to use the generated patch as a structural
-  starting point.
+**Cons:** Outputs frequency in Hz only. Additional logic is required to map the detected frequency to a note name, octave, and cent deviation.
 
-  The generated patch was able to receive an audio input, but failed to
-  produce correct output due to data type mismatches between objects.
-  Additionally, a slide object was applied prematurely in the signal chain,
-  introducing excessive smoothing that degraded pitch accuracy. The model
-  demonstrated limited knowledge of Max 9's specific object behaviors and
-  conventions.
+**Conclusion:** `fzero~` was selected as the pitch detection method for subsequent iterations. Its accuracy comes at the cost of requiring manual implementation of pitch-mapping logic.
 
-  Despite these issues, analyzing the generated patch's failure points
-  provided a useful foundation for the revised implementation in Iteration 2.
+---
 
---------------------------------------------------------------------------------
-1.4  ITERATION 2 -- REVISED PITCH DETECTION PATCH
---------------------------------------------------------------------------------
+#### AI-Assisted Prototyping (Claude Sonnet)
 
-The revised patch addressed the issues from Iteration 1 by simplifying the
-signal chain and focusing exclusively on accurate f0 detection and pitch
-mapping.
+To accelerate development of the pitch-mapping logic around `fzero~`, the Claude Sonnet language model was used to generate an initial Max 9 patch. As the author was still developing familiarity with Max 9's object model and syntax, the intent was to use the generated patch as a structural starting point.
 
-  Signal Flow Overview
-  --------------------
-  1. Audio input  -->  fzero~  -->  f0 in Hz
-  2. f0 (Hz)  -->  frequency-to-MIDI conversion  -->  raw MIDI value
-  3. Raw MIDI value  -->  round  -->  nearest integer MIDI note
-  4. MIDI note  -->  octave calculation + note name lookup  -->  pitch string
+The generated patch was able to receive an audio input, but failed to produce correct output due to data type mismatches between objects. Additionally, a `slide` object was applied prematurely in the signal chain, introducing excessive smoothing that degraded pitch accuracy. The model demonstrated limited knowledge of Max 9's specific object behaviors and conventions.
 
-  -----------------------------------------------------------------------
+Despite these issues, analyzing the generated patch's failure points provided a useful foundation for the revised implementation in Iteration 2.
 
-  Frequency to MIDI Conversion
-  -----------------------------
-  The standard formula for converting a frequency f (Hz) to a MIDI note
-  number m is: [4]
+---
 
-      m = 69 + 12 * log2(f / 440)
+### Iteration 2 — Revised Pitch Detection Patch
 
-  Where MIDI note 69 corresponds to A4 (440 Hz). The result is rounded to
-  the nearest integer to identify the closest equal-tempered pitch.
+The revised patch addressed the issues from Iteration 1 by simplifying the signal chain and focusing exclusively on accurate f₀ detection and pitch mapping.
 
-  -----------------------------------------------------------------------
+#### Signal Flow Overview
 
-  Finding the Octave
-  -------------------
-  MIDI note numbers are organized in groups of 12 (one per octave), spanning
-  0-127. The octave number for a given MIDI note m is:
+1. Audio input → `fzero~` → f₀ in Hz
+2. f₀ (Hz) → frequency-to-MIDI conversion → raw MIDI value
+3. Raw MIDI value → `round` → nearest integer MIDI note
+4. MIDI note → octave calculation + note name lookup → pitch string
 
-      octave = floor(m / 12) - 1
+---
 
-  Example -- E1 (MIDI note 28):
+#### Frequency to MIDI Conversion
 
-      floor(28 / 12) = floor(2.333) = 2
-      2 - 1 = 1  -->  Octave 1
+The standard formula for converting a frequency *f* (in Hz) to a MIDI note number *m* is: [4]
 
-  -----------------------------------------------------------------------
+```
+m = 69 + 12 * log2(f / 440)
+```
 
-  Finding the Note Name
-  ----------------------
-  The note name is determined using the modulo operation, which returns the
-  remainder after dividing the MIDI note number by 12. This remainder maps
-  to the chromatic scale as follows:
+Where MIDI note 69 corresponds to A4 (440 Hz). The result is rounded to the nearest integer to identify the closest equal-tempered pitch.
 
-      Remainder | Note
-      ----------|---------
-          0     | C
-          1     | C# / Db
-          2     | D
-          3     | D# / Eb
-          4     | E
-          5     | F
-          6     | F# / Gb
-          7     | G
-          8     | G# / Ab
-          9     | A
-         10     | A# / Bb
-         11     | B
+---
 
-  Example -- E1 (MIDI note 28):
+#### Finding the Octave
 
-      28 % 12 = 4  -->  E
+MIDI note numbers are organized in groups of 12 (one per octave), spanning 0–127. The octave number for a given MIDI note *m* is calculated as:
 
-  Combined with the octave result above:  E + 1 = E1
+```
+octave = floor(m / 12) - 1
+```
 
---------------------------------------------------------------------------------
-1.5  MAIN PATCH AND DISPLAY
---------------------------------------------------------------------------------
+**Example — E1 (MIDI note 28):**
+```
+floor(28 / 12) = floor(2.333) = 2
+2 - 1 = 1  →  Octave 1
+```
 
-With pitch detection established, the main patch was developed to handle the
-complete signal path and tuner display.
+---
 
-  Signal Routing
-  --------------
-  1. Bass audio input --> pitchDetection sub-patch --> closest pitch
-     (note name + octave)
-  2. Pitch name + original audio signal --> openString_tuner sub-patch
-     --> deviation in cents
+#### Finding the Note Name
 
-  -----------------------------------------------------------------------
+The note name is determined using the modulo operation, which returns the remainder after dividing the MIDI note number by 12. This remainder maps to the chromatic scale:
 
-  openString_tuner Sub-Patch
-  ---------------------------
-  This sub-patch determines whether the detected pitch corresponds to one of
-  the four open strings of a standard bass guitar, and if so, calculates the
-  intonation deviation in cents relative to that string's reference frequency.
+| Remainder | Note     |
+|-----------|----------|
+| 0         | C        |
+| 1         | C# / D♭  |
+| 2         | D        |
+| 3         | D# / E♭  |
+| 4         | E        |
+| 5         | F        |
+| 6         | F# / G♭  |
+| 7         | G        |
+| 8         | G# / A♭  |
+| 9         | A        |
+| 10        | A# / B♭  |
+| 11        | B        |
 
-  Open String Reference Frequencies:
+**Example — E1 (MIDI note 28):**
+```
+28 % 12 = 4  →  E
+```
 
-      String | Pitch | Reference Frequency
-      -------|-------|--------------------
-        E    |  E1   | 41.20 Hz
-        A    |  A1   | 55.00 Hz
-        D    |  D2   | 73.42 Hz
-        G    |  G2   | 98.00 Hz
+Combined with the octave result above: **E + 1 = E1**
 
-  Note Identification via UTF-32 Encoding:
-    The pitch name (char data type) is converted to integer values using the
-    atoi object, which applies UTF-32 encoding. The resulting integers are
-    checked against four parallel conditional branches to identify which open
-    string is being played. Both note and octave are verified to uniquely
-    identify each string.
+---
 
-    Design Note: Checking only note class (ignoring octave) would allow
-    intonation checking for all E, A, D, and G notes across the fretboard,
-    not just open strings. Whether this is beneficial for the device is an
-    open question and is noted as a candidate for future testing.
+### Main Patch and Display
 
-  Cents Deviation Formula:
-    For each matched open string, deviation in cents from the reference
-    frequency is calculated as: [3]
+With pitch detection established, the main patch was developed to handle the complete signal path and tuner display.
 
-        cents = 1200 * log2(f_input / f_reference)
+#### Signal Routing
 
-    Where f_reference is the equal-tempered reference frequency of the open
-    string. The result is rounded for readability before being returned to
-    the main patch.
+1. Bass audio input → `pitchDetection` sub-patch → closest pitch (note name + octave)
+2. Pitch name + original audio signal → `openString_tuner` sub-patch → deviation in cents
 
-  -----------------------------------------------------------------------
+---
 
-  Tuner Display
-  -------------
-  The visual display is built using three Jitter objects within Max 9: [6]
+#### `openString_tuner` Sub-Patch
 
-    - jit.world        Creates and manages the OpenGL rendering window.
-    - jit.gl.text      Renders the detected pitch name as text.
-    - jit.gl.gridshape Renders two circles used as the tuning indicator.
-      (x2 instances)
+This sub-patch determines whether the detected pitch corresponds to one of the four open strings of a standard bass guitar, and if so, calculates the intonation deviation in cents relative to that string's reference frequency.
 
-  The cents deviation value is remapped from the range [-100, 100] to
-  [-3, 3] using the scale object. This value drives the horizontal position
-  of the moving indicator circle:
+**Open String Reference Frequencies:**
 
-      Position Value | Meaning
-      ---------------|---------------------------
-           -3        | Off-screen left  (flat)
-            0        | Centered         (in tune)
-           +3        | Off-screen right (sharp)
+| String | Pitch | Reference Frequency (Hz) |
+|--------|-------|--------------------------|
+| E      | E1    | 41.20 Hz                 |
+| A      | A1    | 55.00 Hz                 |
+| D      | D2    | 73.42 Hz                 |
+| G      | G2    | 98.00 Hz                 |
 
-  Following standard tuner conventions, a centered green circle indicates
-  that the note is in tune.
+**Note Identification via UTF-32 Encoding:**
+Max/MSP does not natively support string comparison between symbol or char objects. As a workaround informed by community research [7], the `atoi` object is used to convert each character of the pitch name to its UTF-32 integer value. The note letter and octave digit are converted separately, producing two integers that together uniquely identify the pitch. These integer pairs are then checked against four parallel conditional branches corresponding to the open strings:
 
- 
-PART 2 -- DAISY SEED DSP INTEGRATION                            [Coming Soon]
- 
+| String | Pitch | UTF-32 (Note) | UTF-32 (Octave) |
+|--------|-------|---------------|-----------------|
+| E      | E1    | 69            | 49              |
+| A      | A1    | 65            | 49              |
+| D      | D2    | 68            | 50              |
+| G      | G2    | 71            | 50              |
 
-This section will cover the implementation of bass-optimized audio effects
-using the DaisySP and LibDaisy libraries on the Daisy Seed hardware platform.
+> **Design Note:** Checking only note class (ignoring octave) would allow intonation checking for all E, A, D, and G notes across the fretboard, not just open strings. Whether this is useful for the device is an open question and is noted as a candidate for future testing.
 
- 
-PART 3 -- HARDWARE DESIGN                                       [Coming Soon]
- 
+**Cents Deviation Formula:**
+For each matched open string, the deviation in cents from the reference frequency is calculated as: [3]
 
-This section will cover the physical hardware design, enclosure, I/O layout,
-and integration of the Max/MSP tuner module with the Daisy Seed pedal platform.
+```
+cents = 1200 * log2(f_input / f_reference)
+```
 
- 
-REFERENCES
- 
+Where `f_reference` is the equal-tempered reference frequency of the open string. The result is rounded for readability before being returned to the main patch.
 
-[1] Electro-Smith, "Daisy Seed," Electro-Smith Documentation. [Online].
-    Available: https://electro-smith.com/daisy
+---
 
-[2] Cycling '74, "Max 9 Documentation," Cycling '74. [Online].
-    Available: https://docs.cycling74.com/max8
+#### Tuner Display
 
-[3] A. Bovik, Handbook of Image and Video Processing, 2nd ed.
-    Academic Press, 2005.
-    (For psychoacoustics and cent deviation formula -- replace with your
-    primary reference for this formula if available.)
+The visual display is built using three Jitter objects within Max 9: [6]
 
-[4] MIDI Manufacturers Association, "MIDI 1.0 Detailed Specification,"
-    MMA, 1996. [Online]. Available: https://www.midi.org/specifications
+- **`jit.world`** — creates and manages the OpenGL rendering window
+- **`jit.gl.text`** — renders the detected pitch name as text in the center of the display
+- **`jit.gl.gridshape`** (×2) — renders two circles: a static yellow circle fixed at center, and a blue circle whose horizontal position is driven by the cents deviation value
 
-[5] Cycling '74, "fzero~ Object Reference," Max 9 Documentation. [Online].
-    Available: https://docs.cycling74.com/max8/refpages/fzero~
+The cents deviation value is remapped from the range [−100, 100] to [−3, 3] using the `scale` object. This value drives the horizontal position of the blue circle:
 
-[6] Cycling '74, "Jitter Tutorial," Max 9 Documentation. [Online].
-    Available: https://docs.cycling74.com/max8/vignettes/jitter_tutorial_index
+| Position Value | Meaning                  |
+|----------------|--------------------------|
+| −3             | Off-screen left (flat)   |
+| 0              | Centered (in tune)       |
+| +3             | Off-screen right (sharp) |
+
+The blue circle's blending mode is set to **exclusion**. When it overlaps the yellow circle at position 0, the two colors combine to produce green — signaling that the note is in tune. This follows standard tuner conventions where a centered green indicator means the pitch is correct.
+
+![Tuner Display — E1 in tune](assets/tuner_display.png)
+*Figure 1: The tuner display showing pitch E1 in tune. The blue and yellow circles overlap at center, producing a green result via exclusion blending.*
+
+---
+
+## Part 2 — Daisy Seed DSP Integration
+
+*Coming soon.* This section will cover the implementation of bass-optimized audio effects using the DaisySP and LibDaisy libraries on the Daisy Seed hardware platform.
+
+---
+
+## Part 3 — Hardware Design
+
+*Coming soon.* This section will cover the physical hardware design, enclosure, I/O layout, and integration of the Max/MSP tuner module with the Daisy Seed pedal platform.
+
+---
+
+## References
+
+[1] Electro-Smith, "Daisy Seed," *Electro-Smith Documentation*. [Online]. Available: https://electro-smith.com/daisy
+
+[2] Cycling '74, "Max 9 Documentation," *Cycling '74*. [Online]. Available: https://docs.cycling74.com/max8
+
+[3] Wikipedia contributors, "Cent (music) — Use," *Wikipedia, The Free Encyclopedia*. [Online]. Available: https://en.wikipedia.org/wiki/Cent_(music)#Use
+
+[4] MIDI Manufacturers Association, "MIDI 1.0 Detailed Specification," MMA, 1996. [Online]. Available: https://www.midi.org/specifications
+
+[5] Cycling '74, "`fzero~` Object Reference," *Max 9 Documentation*. [Online]. Available: https://docs.cycling74.com/max8/refpages/fzero~
+
+[6] Cycling '74, "Jitter Tutorial," *Max 9 Documentation*. [Online]. Available: https://docs.cycling74.com/max8/vignettes/jitter_tutorial_index
+
+[7] Cycling '74 Community Forums, "String comparison," *Cycling '74 Forums*. [Online]. Available: https://cycling74.com/forums/string-comparison
